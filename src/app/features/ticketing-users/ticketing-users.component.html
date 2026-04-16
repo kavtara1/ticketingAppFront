@@ -1,0 +1,206 @@
+<section class="users-page">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">Protected Area</p>
+      <h1>Ticketing users</h1>
+      <p class="intro">Authenticated users are loaded from the backend and shown in a table.</p>
+    </div>
+
+    <div class="header-actions">
+      <button type="button" class="secondary-button" (click)="reloadUsers()" [disabled]="isLoading()">
+        Refresh
+      </button>
+      <button type="button" class="logout-button" (click)="logout()">Log out</button>
+    </div>
+  </header>
+
+  <section class="table-panel">
+    <div class="panel-title-row">
+      <div class="panel-title-left">
+        <button type="button" class="primary-button" (click)="openCreateModal()">Create User</button>
+        <h2>Registered users</h2>
+      </div>
+      <span>{{ users().length }} total</span>
+    </div>
+
+    @if (successMessage()) {
+      <p class="status-message success">{{ successMessage() }}</p>
+    }
+
+    @if (errorMessage()) {
+      <p class="status-message error">{{ errorMessage() }}</p>
+    } @else if (isLoading()) {
+      <p class="status-message">Loading users...</p>
+    } @else if (users().length === 0) {
+      <p class="status-message">No users found.</p>
+    } @else {
+      <div class="table-wrap">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>First Name</th>
+              <th>Last Name</th>
+              <th>Email</th>
+              <th>Department</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of users(); track user.id) {
+              <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.firstName }}</td>
+                <td>{{ user.lastName }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.department }}</td>
+                <td class="actions-cell">
+                  <button type="button" class="table-action edit" (click)="openEditModal(user)">Edit</button>
+                  <button
+                    type="button"
+                    class="table-action delete"
+                    (click)="openDeleteDialog(user)"
+                    [disabled]="isDeleting()"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  @if (isEditModalOpen()) {
+    @if (selectedUser(); as user) {
+      <div class="modal-backdrop" (click)="closeEditModal()">
+        <section class="modal-card" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <div>
+              <p class="modal-eyebrow">Edit User</p>
+              <h2>{{ user.firstName }} {{ user.lastName }}</h2>
+            </div>
+            <button type="button" class="modal-close" (click)="closeEditModal()">Close</button>
+          </div>
+
+          <form class="modal-form" [formGroup]="editForm" (ngSubmit)="updateUser()">
+            <label>
+              <span>First name</span>
+              <input type="text" formControlName="firstName" />
+            </label>
+
+            <label>
+              <span>Last name</span>
+              <input type="text" formControlName="lastName" />
+            </label>
+
+            <label>
+              <span>Email</span>
+              <input type="email" formControlName="email" />
+            </label>
+
+            <label>
+              <span>Department</span>
+              <select formControlName="department">
+                @for (department of departmentOptions; track department) {
+                  <option [value]="department">{{ department }}</option>
+                }
+              </select>
+            </label>
+
+            @if (modalMessage()) {
+              <p class="status-message error modal-status">{{ modalMessage() }}</p>
+            }
+
+            <div class="modal-actions">
+              <button
+                type="submit"
+                class="table-action edit modal-submit"
+                [disabled]="isSaving() || isDeleting()"
+              >
+                {{ isSaving() ? 'Updating...' : 'Update' }}
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+    }
+  }
+
+  @if (isDeleteDialogOpen()) {
+    @if (userPendingDelete(); as user) {
+      <div class="modal-backdrop" (click)="closeDeleteDialog()">
+        <section class="confirm-card" (click)="$event.stopPropagation()">
+          <p class="modal-eyebrow">Delete User</p>
+          <h2>Delete {{ user.firstName }} {{ user.lastName }}?</h2>
+          <p class="confirm-copy">This action cannot be undone.</p>
+          <div class="modal-actions">
+            <button type="button" class="modal-close" (click)="closeDeleteDialog()" [disabled]="isDeleting()">
+              Cancel
+            </button>
+            <button type="button" class="table-action delete" (click)="confirmDelete()" [disabled]="isDeleting()">
+              {{ isDeleting() ? 'Deleting...' : 'Confirm Delete' }}
+            </button>
+          </div>
+        </section>
+      </div>
+    }
+  }
+
+  @if (isCreateModalOpen()) {
+    <div class="modal-backdrop" (click)="closeCreateModal()">
+      <section class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <p class="modal-eyebrow">Create User</p>
+            <h2>Register a new user</h2>
+          </div>
+          <button type="button" class="modal-close" (click)="closeCreateModal()">Close</button>
+        </div>
+
+        <form class="modal-form" [formGroup]="createForm" (ngSubmit)="createUser()">
+          <label>
+            <span>First name</span>
+            <input type="text" formControlName="firstName" />
+          </label>
+
+          <label>
+            <span>Last name</span>
+            <input type="text" formControlName="lastName" />
+          </label>
+
+          <label>
+            <span>Email</span>
+            <input type="email" formControlName="email" />
+          </label>
+
+          <label>
+            <span>Password</span>
+            <input type="password" formControlName="password" />
+          </label>
+
+          <label>
+            <span>Department</span>
+            <select formControlName="department">
+              @for (department of departmentOptions; track department) {
+                <option [value]="department">{{ department }}</option>
+              }
+            </select>
+          </label>
+
+          @if (createModalMessage()) {
+            <p class="status-message error modal-status">{{ createModalMessage() }}</p>
+          }
+
+          <div class="modal-actions modal-actions-left">
+            <button type="submit" class="table-action edit modal-submit" [disabled]="isCreating()">
+              {{ isCreating() ? 'Creating...' : 'Create User' }}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  }
+</section>
