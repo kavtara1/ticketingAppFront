@@ -1,0 +1,64 @@
+.profile-menu {
+  position: relative;
+}
+
+.profile-trigger {
+  border: 1px solid #cfd8e6;
+  background: #fff;
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem 0.25rem 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  cursor: pointer;
+}
+
+.avatar {
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #0f4cbd;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.name {
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  min-width: 180px;
+  border: 1px solid #d8e1ef;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(2, 6, 23, 0.16);
+  padding: 0.35rem;
+  z-index: 50;
+}
+
+.dropdown-item {
+  width: 100%;
+  border: none;
+  background: #fff;
+  text-align: left;
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  cursor: pointer;
+  color: #0f172a;
+}
+
+.dropdown-item:hover {
+  background: #f1f5f9;
+}
+
+.dropdown-item.danger {
+  color: #b42318;
+}

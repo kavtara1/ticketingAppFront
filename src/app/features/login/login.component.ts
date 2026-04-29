@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { switchMap } from 'rxjs';
 
 import { AuthService } from '../../core/auth/auth.service';
 
@@ -35,20 +36,28 @@ export class LoginComponent {
     this.isSubmitting.set(true);
     this.errorMessage.set('');
 
-    this.authService.login(username, password).subscribe({
-      next: () => {
-        const redirectTo = this.route.snapshot.queryParamMap.get('redirectTo') || '/ticketingusers';
-        void this.router.navigateByUrl(redirectTo);
-      },
-      error: (error: HttpErrorResponse) => {
-        this.errorMessage.set(
-          error.status === 401
-            ? 'Invalid username or password.'
-            : 'Login failed. Check the API server and try again.'
-        );
-        this.isSubmitting.set(false);
-      },
-      complete: () => this.isSubmitting.set(false)
-    });
+    this.authService
+      .login(username, password)
+      .pipe(switchMap(() => this.authService.fetchCurrentUser()))
+      .subscribe({
+        next: (user) => {
+          const redirectTo = this.route.snapshot.queryParamMap.get('redirectTo');
+          const targetUrl = redirectTo || this.authService.getDepartmentRoute(user.department);
+          void this.router.navigateByUrl(targetUrl);
+        },
+        error: (error: HttpErrorResponse) => {
+          if (error.status !== 401) {
+            this.authService.logout();
+          }
+
+          this.errorMessage.set(
+            error.status === 401
+              ? 'Invalid username or password.'
+              : 'Login failed. Check the API server and try again.'
+          );
+          this.isSubmitting.set(false);
+        },
+        complete: () => this.isSubmitting.set(false)
+      });
   }
 }

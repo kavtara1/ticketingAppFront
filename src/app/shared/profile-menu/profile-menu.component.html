@@ -1,0 +1,13 @@
+<div class="profile-menu" (click)="$event.stopPropagation()">
+  <button type="button" class="profile-trigger" (click)="toggleMenu($event)">
+    <span class="avatar">{{ initials() }}</span>
+    <span class="name">{{ fullName() }}</span>
+  </button>
+
+  @if (isOpen()) {
+    <div class="dropdown">
+      <button type="button" class="dropdown-item" (click)="goToChangePassword($event)">პაროლის შეცვლა</button>
+      <button type="button" class="dropdown-item danger" (click)="logout($event)">გასვლა</button>
+    </div>
+  }
+</div>

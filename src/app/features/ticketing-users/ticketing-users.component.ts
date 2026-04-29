@@ -1,10 +1,9 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
 
-import { AuthService } from '../../core/auth/auth.service';
 import { API_ENDPOINTS } from '../../core/config/api.config';
+import { ProfileMenuComponent } from '../../shared/profile-menu/profile-menu.component';
 
 interface TicketingUser {
   id: number;
@@ -17,15 +16,13 @@ interface TicketingUser {
 
 @Component({
   selector: 'app-ticketing-users',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, ProfileMenuComponent],
   templateUrl: './ticketing-users.component.html',
   styleUrl: './ticketing-users.component.css'
 })
 export class TicketingUsersComponent implements OnInit {
   private readonly http = inject(HttpClient);
   private readonly formBuilder = inject(FormBuilder);
-  private readonly authService = inject(AuthService);
-  private readonly router = inject(Router);
 
   protected readonly departmentOptions = ['ccsupportfix', 'Telephonegram', 'Servicenet'];
   protected readonly users = signal<TicketingUser[]>([]);
@@ -64,11 +61,6 @@ export class TicketingUsersComponent implements OnInit {
 
   protected reloadUsers(): void {
     this.loadUsers();
-  }
-
-  protected logout(): void {
-    this.authService.logout();
-    void this.router.navigate(['/login']);
   }
 
   protected openCreateModal(): void {

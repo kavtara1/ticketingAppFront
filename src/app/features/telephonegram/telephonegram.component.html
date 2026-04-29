@@ -1,0 +1,347 @@
+<main class="telephonegram-page">
+  <header class="telephonegram-header">
+    <div class="header-copy">
+      <h1>ტელეფონოგრამა</h1>
+    </div>
+
+    <div class="header-actions">
+      <button type="button" class="primary-button" (click)="openCreateModal()">ახალი ბილეთი</button>
+      <app-profile-menu />
+    </div>
+  </header>
+
+  <section class="tickets-panel panel-card">
+    <div class="tickets-header">
+      <h2>ტელეფონოგრამის ბილეთები</h2>
+      <button type="button" class="modal-close" (click)="reloadTickets()" [disabled]="isLoadingTickets()">
+        განახლება
+      </button>
+    </div>
+
+    @if (ticketsErrorMessage()) {
+      <p class="status-message error">{{ ticketsErrorMessage() }}</p>
+    } @else if (isLoadingTickets()) {
+      <p class="status-message">იტვირთება...</p>
+    } @else if (tickets().length === 0) {
+      <p class="status-message">ბილეთები არ მოიძებნა.</p>
+    } @else {
+      <div class="tickets-table-wrap">
+        <table class="tickets-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>რეგიონი</th>
+              <th>მისამართი</th>
+              <th>პასუხისმგებელი</th>
+              <th>ტელეფონი</th>
+              <th>დრო</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (ticket of tickets(); track (ticket.ticketId || ticket.id || $index)) {
+              <tr class="ticket-row" (click)="openTicket(ticket)">
+                <td>{{ ticket.ticketId || ticket.id }}</td>
+                <td>{{ ticket.region }}</td>
+                <td>{{ ticket.address }}</td>
+                <td>{{ ticket.responsiblePerson }}</td>
+                <td>{{ ticket.contactPhone }}</td>
+                <td>{{ ticket.time }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  @if (isCreateModalOpen()) {
+    <div class="modal-backdrop" (click)="closeCreateModal()">
+      <section class="modal-card ticket-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>ტელეფონოგრამის ბილეთის შექმნა</h2>
+          <button type="button" class="modal-close" (click)="closeCreateModal()">დახურვა</button>
+        </div>
+
+        <form class="ticket-form form-grid" [formGroup]="createForm" (ngSubmit)="createTicket()">
+          <label class="field">
+            <span>ტელეფონოგრამა</span>
+            <input type="text" formControlName="telephonegramId" />
+          </label>
+
+          <div class="region-field field">
+            <span>რეგიონი</span>
+            <div class="region-dropdown">
+              <button type="button" class="region-trigger" (click)="toggleRegionDropdown()">
+                {{ selectedRegionLabel() }}
+              </button>
+              @if (isRegionDropdownOpen()) {
+                <div class="region-panel">
+                  <input
+                    type="text"
+                    placeholder="რეგიონის ძებნა"
+                    [value]="regionSearch()"
+                    (input)="onRegionSearch($any($event.target).value)"
+                  />
+                  <div class="region-options">
+                    @if (filteredRegions().length === 0) {
+                      <p class="region-empty">რეგიონი ვერ მოიძებნა.</p>
+                    } @else {
+                      @for (region of filteredRegions(); track region) {
+                        <button type="button" class="region-option" (click)="selectRegion(region)">
+                          {{ region }}
+                        </button>
+                      }
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <label class="field">
+            <span>მისამართი</span>
+            <input type="text" formControlName="address" />
+          </label>
+
+          <label class="field">
+            <span>გზის საფარი</span>
+            <input type="text" formControlName="roadSurface" />
+          </label>
+
+          <label class="field">
+            <span>პასუხისმგებელი პირი</span>
+            <input type="text" formControlName="responsiblePerson" />
+          </label>
+
+          <label class="field">
+            <span>საკონტაქტო ტელეფონი</span>
+            <input type="text" formControlName="contactPhone" />
+          </label>
+
+          <label class="field">
+            <span>დრო</span>
+            <input type="text" formControlName="time" />
+          </label>
+
+          <label class="field">
+            <span>გამგზავნი</span>
+            <input type="text" formControlName="sender" />
+          </label>
+
+          <label class="field">
+            <span>მიმღები</span>
+            <input type="text" formControlName="sendTo" />
+          </label>
+
+          <label class="field field-full">
+            <span>კომენტარი</span>
+            <textarea rows="3" formControlName="comment"></textarea>
+          </label>
+
+          @if (errorMessage()) {
+            <p class="status-message error field-full">{{ errorMessage() }}</p>
+          }
+
+          <div class="modal-actions field-full">
+            <button type="submit" class="primary-button" [disabled]="isCreating()">
+              {{ isCreating() ? 'იქმნება...' : 'ბილეთის შექმნა' }}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  }
+
+  @if (isDetailModalOpen()) {
+    <div class="modal-backdrop" (click)="closeTicketDetails()">
+      <section class="modal-card details-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>ტიკეტის დეტალები</h2>
+          <button type="button" class="modal-close" (click)="closeTicketDetails()">დახურვა</button>
+        </div>
+
+        @if (isLoadingDetail()) {
+          <p class="status-message">იტვირთება...</p>
+        } @else if (detailErrorMessage()) {
+          <p class="status-message error">{{ detailErrorMessage() }}</p>
+        } @else if (selectedTicketDetail(); as detail) {
+          <form class="ticket-form form-grid" [formGroup]="detailForm" (ngSubmit)="saveTicketDetails()">
+            <div class="field readonly-field">
+              <span>Ticket ID</span>
+              <p>{{ detail.ticketId }}</p>
+            </div>
+
+            <label class="field">
+              <span>ტელეფონოგრამა</span>
+              <input type="text" formControlName="telephonegramId" />
+            </label>
+
+            <div class="region-field field">
+              <span>რეგიონი</span>
+              <div class="region-dropdown">
+                <button type="button" class="region-trigger" (click)="toggleDetailRegionDropdown()">
+                  {{ selectedDetailRegionLabel() }}
+                </button>
+                @if (isDetailRegionDropdownOpen()) {
+                  <div class="region-panel">
+                    <input
+                      type="text"
+                      placeholder="რეგიონის ძებნა"
+                      [value]="detailRegionSearch()"
+                      (input)="onDetailRegionSearch($any($event.target).value)"
+                    />
+                    <div class="region-options">
+                      @if (filteredDetailRegions().length === 0) {
+                        <p class="region-empty">რეგიონი ვერ მოიძებნა.</p>
+                      } @else {
+                        @for (region of filteredDetailRegions(); track region) {
+                          <button type="button" class="region-option" (click)="selectDetailRegion(region)">
+                            {{ region }}
+                          </button>
+                        }
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <label class="field">
+              <span>მისამართი</span>
+              <input type="text" formControlName="address" />
+            </label>
+
+            <label class="field">
+              <span>გზის საფარი</span>
+              <input type="text" formControlName="roadSurface" />
+            </label>
+
+            <label class="field">
+              <span>პასუხისმგებელი პირი</span>
+              <input type="text" formControlName="responsiblePerson" />
+            </label>
+
+            <label class="field">
+              <span>საკონტაქტო ტელეფონი</span>
+              <input type="text" formControlName="contactPhone" />
+            </label>
+
+            <label class="field">
+              <span>დრო</span>
+              <input type="text" formControlName="time" />
+            </label>
+
+            <label class="field">
+              <span>გამგზავნი</span>
+              <input type="text" formControlName="sender" />
+            </label>
+
+            <label class="field">
+              <span>მიმღები</span>
+              <input type="text" formControlName="sendTo" />
+            </label>
+
+            <div class="field readonly-field">
+              <span>ავტორი</span>
+              <p>{{ detail.author }}</p>
+            </div>
+
+            <div class="field readonly-field">
+              <span>შექმნილია</span>
+              <p>{{ formatDateTime(detail.createdDate) }}</p>
+            </div>
+
+            <label class="field field-full">
+              <span>კომენტარი</span>
+              <textarea rows="3" formControlName="comment"></textarea>
+            </label>
+
+            @if (saveSuccessMessage()) {
+              <p class="status-message success field-full">{{ saveSuccessMessage() }}</p>
+            }
+            @if (saveErrorMessage()) {
+              <p class="status-message error field-full">{{ saveErrorMessage() }}</p>
+            }
+            @if (returnErrorMessage()) {
+              <p class="status-message error field-full">{{ returnErrorMessage() }}</p>
+            }
+
+            <div class="modal-actions field-full">
+              <button type="submit" class="primary-button" [disabled]="isSavingTicket()">
+                {{ isSavingTicket() ? 'ინახება...' : 'ცვლილებების შენახვა' }}
+              </button>
+            </div>
+          </form>
+
+          <section class="comments-section">
+            <div class="add-comment-box">
+              <textarea
+                rows="3"
+                placeholder="დაწერეთ კომენტარი..."
+                [value]="commentText()"
+                (input)="onCommentChange($any($event.target).value)"
+              ></textarea>
+
+              @if (commentErrorMessage()) {
+                <p class="status-message error">{{ commentErrorMessage() }}</p>
+              }
+
+              <div class="comment-actions">
+                <button
+                  type="button"
+                  class="secondary-button"
+                  (click)="addComment()"
+                  [disabled]="isSubmittingComment()"
+                >
+                  {{ isSubmittingComment() ? 'ემატება...' : 'კომენტარის დამატება' }}
+                </button>
+                <button
+                  type="button"
+                  class="secondary-button"
+                  (click)="openReturnConfirm()"
+                  [disabled]="isReturningTicket()"
+                >
+                  {{ isReturningTicket() ? 'ბრუნდება...' : 'დაბრუნება' }}
+                </button>
+              </div>
+            </div>
+
+            <h3>კომენტარები</h3>
+            @if (detail.comments.length === 0) {
+              <p class="status-message">კომენტარები არ არის.</p>
+            } @else {
+              <div class="comments-list">
+                @for (item of detail.comments; track item.commentId) {
+                  <article class="comment-card">
+                    <p class="comment-top">
+                      <strong>{{ item.author }}</strong>
+                      <span>{{ formatDateTime(item.createdAt) }}</span>
+                    </p>
+                    <p>{{ item.comment }}</p>
+                  </article>
+                }
+              </div>
+            }
+          </section>
+        }
+      </section>
+    </div>
+  }
+
+  @if (isReturnConfirmOpen()) {
+    <div class="confirm-backdrop" (click)="closeReturnConfirm()">
+      <section class="confirm-card" (click)="$event.stopPropagation()">
+        <h3>ტიკეტის დაბრუნება</h3>
+        <p>დარწმუნებული ხართ, რომ გსურთ ტიკეტის ServiceNet-ში დაბრუნება?</p>
+        <div class="confirm-actions">
+          <button type="button" class="secondary-button" (click)="closeReturnConfirm()" [disabled]="isReturningTicket()">
+            გაუქმება
+          </button>
+          <button type="button" class="secondary-button confirm" (click)="confirmReturnToServiceNet()" [disabled]="isReturningTicket()">
+            დადასტურება
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+</main>

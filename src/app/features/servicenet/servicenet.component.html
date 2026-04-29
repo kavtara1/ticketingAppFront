@@ -1,0 +1,204 @@
+<main class="servicenet-page">
+  <header class="servicenet-header">
+    <div class="header-copy">
+      <h1>ServiceNet</h1>
+    </div>
+
+    <div class="header-actions">
+      <app-profile-menu />
+    </div>
+  </header>
+
+  <section class="tickets-layout">
+    <aside class="tickets-menu">
+      <button
+        type="button"
+        class="text-filter"
+        [class.active]="selectedTicketMenu() === 'servicenet'"
+        (click)="selectServiceNetTickets()"
+      >
+        ტელეფონოგრამა
+      </button>
+    </aside>
+
+    <section class="tickets-panel panel-card">
+      <div class="tickets-header">
+        <h2>ServiceNet ბილეთები</h2>
+        <div class="table-controls">
+          <div class="region-filter-buttons">
+            <button
+              type="button"
+              class="region-button"
+              [class.active]="selectedRegion() === 'all'"
+              (click)="selectAllTickets()"
+              [disabled]="isLoadingTickets() || selectedTicketMenu() !== 'servicenet'"
+            >
+              ყველა
+            </button>
+            @for (region of regionOptions; track region) {
+              <button
+                type="button"
+                class="region-button"
+                [class.active]="selectedRegion() === region"
+                (click)="selectRegionFilter(region)"
+                [disabled]="isLoadingTickets() || selectedTicketMenu() !== 'servicenet'"
+              >
+                {{ region }}
+              </button>
+            }
+          </div>
+          <button
+            type="button"
+            class="secondary-button"
+            (click)="reloadTickets()"
+            [disabled]="isLoadingTickets() || selectedTicketMenu() !== 'servicenet'"
+          >
+            განახლება
+          </button>
+        </div>
+      </div>
+
+      @if (selectedTicketMenu() !== 'servicenet') {
+        <p class="status-message">აირჩიეთ ServiceNet მენიუდან.</p>
+      } @else if (ticketsErrorMessage()) {
+        <p class="status-message error">{{ ticketsErrorMessage() }}</p>
+      } @else if (isLoadingTickets()) {
+        <p class="status-message">იტვირთება...</p>
+      } @else if (tickets().length === 0) {
+        <p class="status-message">ბილეთები არ მოიძებნა.</p>
+      } @else {
+        <div class="tickets-table-wrap">
+          <table class="tickets-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>რეგიონი</th>
+                <th>მისამართი</th>
+                <th>პასუხისმგებელი</th>
+                <th>ტელეფონი</th>
+                <th>დრო</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (ticket of tickets(); track (ticket.ticketId || ticket.id || $index)) {
+                <tr class="ticket-row" (click)="openTicket(ticket)">
+                  <td>{{ ticket.ticketId ?? ticket.id }}</td>
+                  <td>{{ ticket.region }}</td>
+                  <td>{{ ticket.address }}</td>
+                  <td>{{ ticket.responsiblePerson }}</td>
+                  <td>{{ ticket.contactPhone }}</td>
+                  <td>{{ ticket.time }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </section>
+
+  @if (isDetailModalOpen()) {
+    <div class="modal-backdrop" (click)="closeTicketDetails()">
+      <section class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>ტიკეტის დეტალები</h2>
+          <div class="modal-header-actions">
+            <button type="button" class="secondary-button" (click)="closeTicketDetails()">დახურვა</button>
+          </div>
+        </div>
+
+        @if (isLoadingDetail()) {
+          <p class="status-message">იტვირთება...</p>
+        } @else if (detailErrorMessage()) {
+          <p class="status-message error">{{ detailErrorMessage() }}</p>
+        } @else if (selectedTicketDetail(); as detail) {
+          @if (returnErrorMessage()) {
+            <p class="status-message error">{{ returnErrorMessage() }}</p>
+          }
+          <section class="ticket-detail-grid">
+            <p><span>Ticket ID</span><strong>{{ detail.ticketId }}</strong></p>
+            <p><span>Telephonegram ID</span><strong>{{ detail.telephonegramId }}</strong></p>
+            <p><span>რეგიონი</span><strong>{{ detail.region }}</strong></p>
+            <p><span>მისამართი</span><strong>{{ detail.address }}</strong></p>
+            <p><span>გზის საფარი</span><strong>{{ detail.roadSurface }}</strong></p>
+            <p><span>პასუხისმგებელი</span><strong>{{ detail.responsiblePerson }}</strong></p>
+            <p><span>ტელეფონი</span><strong>{{ detail.contactPhone }}</strong></p>
+            <p><span>დრო</span><strong>{{ detail.time }}</strong></p>
+            <p><span>გამგზავნი</span><strong>{{ detail.sender }}</strong></p>
+            <p><span>მიმღები</span><strong>{{ detail.sendTo }}</strong></p>
+            <p><span>ავტორი</span><strong>{{ detail.author }}</strong></p>
+            <p><span>Origin</span><strong>{{ detail.originDepartment }}</strong></p>
+            <p><span>Created</span><strong>{{ formatDateTime(detail.createdDate) }}</strong></p>
+            <p class="detail-full"><span>კომენტარი</span><strong>{{ detail.comment }}</strong></p>
+          </section>
+
+          <section class="comments-section">
+            <div class="add-comment-box">
+              <textarea
+                rows="3"
+                placeholder="დაწერეთ კომენტარი..."
+                [value]="commentText()"
+                (input)="onCommentChange($any($event.target).value)"
+              ></textarea>
+              @if (commentErrorMessage()) {
+                <p class="status-message error">{{ commentErrorMessage() }}</p>
+              }
+              <div class="comment-actions">
+                <button
+                  type="button"
+                  class="secondary-button"
+                  (click)="addComment()"
+                  [disabled]="isSubmittingComment()"
+                >
+                  {{ isSubmittingComment() ? 'ემატება...' : 'კომენტარის დამატება' }}
+                </button>
+                <button
+                  type="button"
+                  class="secondary-button"
+                  (click)="openReturnConfirm()"
+                  [disabled]="isLoadingDetail() || isReturningTicket() || !selectedTicketDetail()"
+                >
+                  {{ isReturningTicket() ? 'ბრუნდება...' : 'დაბრუნება' }}
+                </button>
+              </div>
+            </div>
+            <h3>კომენტარები</h3>
+
+            @if (detail.comments.length === 0) {
+              <p class="status-message">კომენტარები არ არის.</p>
+            } @else {
+              <div class="comments-list">
+                @for (item of detail.comments; track item.commentId) {
+                  <article class="comment-card">
+                    <p class="comment-top">
+                      <strong>{{ item.author }}</strong>
+                      <span>{{ formatDateTime(item.createdAt) }}</span>
+                    </p>
+                    <p>{{ item.comment }}</p>
+                  </article>
+                }
+              </div>
+            }
+          </section>
+        }
+      </section>
+    </div>
+  }
+
+  @if (isReturnConfirmOpen()) {
+    <div class="confirm-backdrop" (click)="closeReturnConfirm()">
+      <section class="confirm-card" (click)="$event.stopPropagation()">
+        <h3>ტიკეტის დაბრუნება</h3>
+        <p>დარწმუნებული ხართ, რომ გსურთ ტიკეტის დაბრუნება საწყის დეპარტამენტში?</p>
+        <div class="confirm-actions">
+          <button type="button" class="secondary-button" (click)="closeReturnConfirm()" [disabled]="isReturningTicket()">
+            გაუქმება
+          </button>
+          <button type="button" class="secondary-button confirm" (click)="confirmReturnToOrigin()" [disabled]="isReturningTicket()">
+            დადასტურება
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+</main>
